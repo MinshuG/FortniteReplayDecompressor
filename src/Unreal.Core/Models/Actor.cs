@@ -15,5 +15,20 @@
         public FRotator? Rotation { get; set; }
         public FVector? Scale { get; set; }
         public FVector? Velocity { get; set; }
+
+        public string? GetObject()
+        {
+            if (Archetype != null && Archetype.GuidCache!.NetFieldExportGroupMapPathFixed.TryGetValue(Archetype.Value, out var group))
+            {
+                return group.PathName;
+            }
+
+            return null;
+        }
+
+        public override string ToString()
+        {
+            return $"Object={GetObject()}, Location={Location}, Rotation={Rotation}, Scale={Scale}";
+        }
     }
 }

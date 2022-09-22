@@ -4,6 +4,7 @@ using FortniteReplayReader.Models.NetFieldExports.Weapons;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Unreal.Core.Models;
 
 namespace FortniteReplayReader
 {
@@ -18,6 +19,8 @@ namespace FortniteReplayReader
 
         private readonly Dictionary<uint, uint> _actorToChannel = new();
         private readonly Dictionary<uint, uint> _channelToActor = new();
+        public readonly Dictionary<uint, Actor> _actor_actors = new();
+
         private readonly Dictionary<uint, uint> _pawnChannelToStateChannel = new();
 
         /// <summary>
@@ -43,11 +46,18 @@ namespace FortniteReplayReader
             _actorToChannel[guid] = channelIndex;
             _channelToActor[channelIndex] = guid;
         }
+        
+        public void AddActorChannel(uint channelIndex, uint guid, Actor actorinfo)
+        {
+            AddActorChannel(channelIndex, guid);
+            _actor_actors[guid] = actorinfo;
+        }
 
         public void RemoveChannel(uint channelIndex)
         {
             _weapons.Remove(channelIndex);
             _unknownWeapons.Remove(channelIndex);
+            _actor_actors.Remove(_channelToActor[channelIndex]);
         }
 
         /// <summary>

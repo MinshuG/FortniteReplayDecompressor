@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using Unreal.Core.Contracts;
 using Unreal.Core.Exceptions;
 using Unreal.Core.Extensions;
@@ -17,7 +20,7 @@ namespace Unreal.Core
     public abstract class ReplayReader<T> where T : Replay, new()
     {
         /// <summary>
-        /// const int32 UNetConnection::DEFAULT_MAX_CHANNEL_SIZE = 32767; 
+        /// const int32 UNetConnection::DEFAULT_MAX_CHANNEL_SIZE = 32767;
         /// see https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Engine/Private/NetConnection.cpp#L84
         /// </summary>
         protected const int DefaultMaxChannelSize = 32767;
@@ -57,8 +60,8 @@ namespace Unreal.Core
         protected ParseMode _parseMode;
         protected bool IsDebugMode => _parseMode == ParseMode.Debug;
 
-        protected NetGuidCache _netGuidCache;
-        protected NetFieldParser _netFieldParser;
+        public NetGuidCache _netGuidCache;
+        public NetFieldParser _netFieldParser;
 
         private int replayDataIndex = 0;
         private int checkpointIndex = 0;
@@ -83,7 +86,7 @@ namespace Unreal.Core
         /// <summary>
         /// Received channels during replay parsing.
         /// </summary>
-        protected UChannel?[] Channels = new UChannel[DefaultMaxChannelSize];
+        public UChannel?[] Channels = new UChannel[DefaultMaxChannelSize];
 
         /// <summary>
         /// Tracks channels that we should ignore when handling special demo data.
@@ -100,7 +103,7 @@ namespace Unreal.Core
         }
 
         /// <summary>
-        /// Parses the entire replay. 
+        /// Parses the entire replay.
         /// It first parses the info section, and then all chunks.
         /// </summary>
         public virtual T ReadReplay(FArchive archive)
@@ -110,7 +113,7 @@ namespace Unreal.Core
             ReadReplayInfo(archive);
             ReadReplayChunks(archive);
 
-            Cleanup();
+            // Cleanup();
 
             return Replay;
         }
@@ -202,6 +205,7 @@ namespace Unreal.Core
                 }
 
                 var deletedNetStartupActors = binaryArchive.ReadArray(binaryArchive.ReadFString);
+                Console.WriteLine();
             }
 
             // SerializeGuidCache
@@ -215,7 +219,8 @@ namespace Unreal.Core
                 {
                     OuterGuid = new NetworkGUID
                     {
-                        Value = binaryArchive.ReadIntPacked()
+                        Value = binaryArchive.ReadIntPacked(),
+                        GuidCache = _netGuidCache
                     }
                 };
 
@@ -258,7 +263,7 @@ namespace Unreal.Core
                 _netGuidCache.NetFieldExportGroupMap.Clear();
                 _netGuidCache.NetFieldExportGroupIndexToGroup.Clear();
 
-                // SerializeNetFieldExportGroupMap 
+                // SerializeNetFieldExportGroupMap
                 // https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Engine/Private/PackageMapClient.cpp#L1289
                 var numNetFieldExportGroups = binaryArchive.ReadUInt32();
                 for (var i = 0; i < numNetFieldExportGroups; i++)
@@ -309,24 +314,46 @@ namespace Unreal.Core
         /// <summary>
         /// see https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/NetworkReplayStreaming/LocalFileNetworkReplayStreaming/Private/LocalFileNetworkReplayStreaming.cpp#L243
         /// </summary>
-        public virtual void ReadReplayChunks(FArchive archive)
-        {
+        public virtual void ReadReplayChunks(FArchive archive) {
+            // var ReplayChunks = new List<ReplayDataInfo>();
+            bool bHasReadReplayData = false;
             while (!archive.AtEnd())
             {
                 ReplayChunkType chunkType = archive.ReadUInt32AsEnum<ReplayChunkType>();
                 var chunkSize = archive.ReadInt32();
                 var offset = archive.Position;
 
-                if (chunkType == ReplayChunkType.ReplayData && _parseMode.HasFlag(ParseMode.Minimal))
+                if (chunkType == ReplayChunkType.ReplayData && _parseMode.HasFlag(ParseMode.Minimal) && !bHasReadReplayData)
                 {
-                    ReadReplayData(archive, chunkSize);
-                }
+                    var info = new ReplayDataInfo();
+                    if (archive.ReplayVersion.HasFlag(ReplayVersionHistory.HISTORY_STREAM_CHUNK_TIMES))
+                    {
+                        info.Start = archive.ReadUInt32();
+                        info.End = archive.ReadUInt32();
+                        info.Length = (int)archive.ReadUInt32();
+                    }
+                    else
+                    {
+                        info.Length = chunkSize;
+                    }
 
+                    if (archive.ReplayVersion.HasFlag(ReplayVersionHistory.HISTORY_ENCRYPTION))
+                    {
+                        // memorySizeInBytes
+                        archive.ReadInt32();
+                    }
+
+                    info.DataOffset = archive.Position;
+
+                    //ReplayChunks.Add(info);
+                    ReadReplayData(archive, info);
+                    // bHasReadReplayData = false;
+                }
                 else if (chunkType == ReplayChunkType.Checkpoint)
                 {
                     // Checkpoints are used for fast forwarding,
                     // we dont need it unless we want to process small parts of replay files.
-                    //ReadCheckpoint(archive);
+                    ReadCheckpoint(archive);
                 }
 
                 else if (chunkType == ReplayChunkType.Event)
@@ -345,12 +372,27 @@ namespace Unreal.Core
                     archive.Seek(offset + chunkSize, SeekOrigin.Begin);
                 }
             }
+
+            // var lastReplaychunk = ReplayChunks.Last();
+            // ReadReplayData(archive, lastReplaychunk);
+            //Debugger.Break();
         }
 
+        public virtual void ReadReplayData(FArchive archive, ReplayDataInfo info) {
+            archive.Seek(info.DataOffset);
+
+            using FArchive? decrypted = DecryptBuffer(archive, info.Length);
+            using FArchive? binaryArchive = Decompress(decrypted);
+            while (!binaryArchive.AtEnd())
+            {
+                ReadDemoFrameIntoPlaybackPackets(binaryArchive);
+            }
+            replayDataIndex++;
+        }
 
         /// <summary>
         /// see https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/NetworkReplayStreaming/LocalFileNetworkReplayStreaming/Private/LocalFileNetworkReplayStreaming.cpp#L318
-        /// </summary> 
+        /// </summary>
         public virtual void ReadReplayData(FArchive archive, int fallbackChunkSize)
         {
             var info = new ReplayDataInfo();
@@ -371,13 +413,8 @@ namespace Unreal.Core
                 archive.ReadInt32();
             }
 
-            using FArchive? decrypted = DecryptBuffer(archive, info.Length);
-            using FArchive? binaryArchive = Decompress(decrypted);
-            while (!binaryArchive.AtEnd())
-            {
-                ReadDemoFrameIntoPlaybackPackets(binaryArchive);
-            }
-            replayDataIndex++;
+            info.DataOffset = archive.Position;
+            ReadReplayData(archive, info);
         }
 
         /// <summary>
@@ -447,6 +484,9 @@ namespace Unreal.Core
                 header.Changelist = archive.ReadUInt32();
             }
 
+            if (header.NetworkVersion >= NetworkVersionHistory.SomeShitHappened) {
+                archive.Seek(12, SeekOrigin.Current);
+            }
             if (header.NetworkVersion <= NetworkVersionHistory.HISTORY_MULTIPLE_LEVELS)
             {
                 throw new NotImplementedException("HISTORY_MULTIPLE_LEVELS not supported yet.");
@@ -761,7 +801,7 @@ namespace Unreal.Core
                 var numStreamingLevels = archive.ReadIntPacked();
                 for (var i = 0; i < numStreamingLevels; i++)
                 {
-                    // levelName 
+                    // levelName
                     archive.ReadFString();
                 }
             }
@@ -879,7 +919,8 @@ namespace Unreal.Core
 
             var netGuid = new NetworkGUID()
             {
-                Value = archive.ReadIntPacked()
+                Value = archive.ReadIntPacked(),
+                GuidCache = _netGuidCache
             };
 
             if (!netGuid.IsValid())
@@ -896,7 +937,7 @@ namespace Unreal.Core
                     // outerGuid
                     InternalLoadObject(archive, true, internalLoadObjectRecursionCount + 1);
                     var pathName = archive.ReadFString();
-
+                    netGuid.GuidCache = _netGuidCache;
                     if (flags.HasFlag(ExportFlags.bHasNetworkChecksum))
                     {
                         // networkChecksum
@@ -994,7 +1035,7 @@ namespace Unreal.Core
                                 return;
 
                             }
-                            // Incomplete partial bunch. 
+                            // Incomplete partial bunch.
                         }
                         PartialBunch = null;
                     }
@@ -1203,7 +1244,7 @@ namespace Unreal.Core
                 }
 
                 channel.Actor = inActor;
-                OnChannelOpened(channel.ChannelIndex, inActor.ActorNetGUID);
+                OnChannelOpened(channel.ChannelIndex, inActor.ActorNetGUID, inActor);
 
                 // OnActorChannelOpen
                 // see https://github.com/EpicGames/UnrealEngine/blob/6c20d9831a968ad3cb156442bebb41a883e62152/Engine/Source/Runtime/Engine/Private/PlayerController.cpp#L1338
@@ -1218,7 +1259,7 @@ namespace Unreal.Core
             }
 
             //  Read chunks of actor content
-            while (!bunch.Archive.AtEnd())
+            while (!bunch.Archive.AtEnd() && !bunch.Archive.IsError)
             {
                 var repObject = ReadContentBlockPayload(bunch, out var bObjectDeleted, out var bHasRepLayout, out uint? payload);
 
@@ -2134,8 +2175,8 @@ namespace Unreal.Core
 
         /// <summary>
         /// After receiving propteries for this <paramref name="exportGroup"/> indicate wheter it can be ignored for the rest of the replay (on the given channel)
-        /// or if it can be ignored for the rest of the replay. 
-        /// Useful to minimize the parsing, e.g. if you're only interested in the initial values and not subsequent updates. 
+        /// or if it can be ignored for the rest of the replay.
+        /// Useful to minimize the parsing, e.g. if you're only interested in the initial values and not subsequent updates.
         /// </summary>
         protected virtual bool IgnoreGroupOnChannel(uint channelIndex, INetFieldExportGroup exportGroup)
         {
@@ -2145,7 +2186,7 @@ namespace Unreal.Core
         /// <summary>
         /// Notifies when a new actor channel is created.
         /// </summary>
-        protected virtual void OnChannelOpened(uint channelIndex, NetworkGUID? actor)
+        protected virtual void OnChannelOpened(uint channelIndex, NetworkGUID? actor, Actor actorinfo)
         {
 
         }

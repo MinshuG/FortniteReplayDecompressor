@@ -9,6 +9,22 @@ namespace Unreal.Core.Models
     {
         public uint Value { get; set; }
 
+        public string Object
+        {
+            get
+            {
+                if (GuidCache != null && GuidCache.TryGetPathName(Value, out var pathName))
+                // if (GuidCache.NetFieldExportGroupMapPathFixed.TryGetValue(Value, out var group))
+                {
+                    // return group.PathName;
+                    return pathName;
+                }
+                return "None";    
+            }
+        }
+        
+        public NetGuidCache? GuidCache;
+
         public bool IsValid()
         {
             return Value > 0;
@@ -22,6 +38,11 @@ namespace Unreal.Core.Models
         public bool IsDefault()
         {
             return Value == 1;
+        }
+
+        public override string ToString()
+        {
+            return Object;
         }
 
         public void Serialize(NetBitReader reader)

@@ -21,7 +21,7 @@ namespace FortniteReplayReader
 {
     public class ReplayReader : Unreal.Core.ReplayReader<FortniteReplay>
     {
-        private FortniteReplayBuilder Builder;
+        public FortniteReplayBuilder Builder;
 
         public ReplayReader(ILogger logger = null, ParseMode parseMode = ParseMode.Minimal) : base(logger, parseMode)
         {
@@ -62,11 +62,11 @@ namespace FortniteReplayReader
             }
         }
 
-        protected override void OnChannelOpened(uint channelIndex, NetworkGUID? actor)
+        protected override void OnChannelOpened(uint channelIndex, NetworkGUID? actor, Actor actorinfo)
         {
             if (actor != null)
             {
-                Builder.AddActorChannel(channelIndex, actor.Value);
+                Builder.AddActorChannel(channelIndex, actor.Value, actorinfo);
             }
         }
 
