@@ -400,7 +400,7 @@ namespace Unreal.Core
             {
                 info.Start = archive.ReadUInt32();
                 info.End = archive.ReadUInt32();
-                info.Length = (int)archive.ReadUInt32();
+                info.Length = (int) archive.ReadUInt32();
             }
             else
             {
@@ -852,7 +852,7 @@ namespace Unreal.Core
                 if (skipExternalOffset > 0)
                 {
                     // ignore it for now
-                    archive.SkipBytes((int)skipExternalOffset);
+                    archive.SkipBytes((int) skipExternalOffset);
                 }
                 // else skip externalOffset
             }
@@ -1284,7 +1284,7 @@ namespace Unreal.Core
                     continue;
                 }
 
-                bunch.Archive.SetTempEnd((int)payload, FBitArchiveEndIndex.CONTENT_BLOCK_PAYLOAD);
+                bunch.Archive.SetTempEnd((int) payload, FBitArchiveEndIndex.CONTENT_BLOCK_PAYLOAD);
 
                 try
                 {
@@ -1362,7 +1362,7 @@ namespace Unreal.Core
                     continue;
                 }
 
-                archive.SetTempEnd((int)payload, FBitArchiveEndIndex.FIELD_HEADER_PAYLOAD);
+                archive.SetTempEnd((int) payload, FBitArchiveEndIndex.FIELD_HEADER_PAYLOAD);
                 try
                 {
                     if (fieldCache == null)
@@ -1728,7 +1728,7 @@ namespace Unreal.Core
                 hasdata = true;
                 try
                 {
-                    _cmdReader.FillBuffer(archive.ReadBits(numBits), (int)numBits);
+                    _cmdReader.FillBuffer(archive.ReadBits(numBits), (int) numBits);
                     if (!_netFieldParser.ReadField(exportGroup, export, handle, group, _cmdReader))
                     {
                         // Set field incompatible since we couldnt (or didnt want to) parse it.
@@ -1743,7 +1743,7 @@ namespace Unreal.Core
 #if DEBUG
                         Debug("failed-properties", $"Property {export.Name} (handle: {handle}, path: {group.PathName}) caused error when reading (bits: {numBits}, group: {group.PathName})");
                         _cmdReader.Reset();
-                        Debug($"cmd-{export.Name}-{numBits}", "cmds", _cmdReader.ReadBytes(Math.Max((int)Math.Ceiling(_cmdReader.GetBitsLeft() / 8.0), 1)));
+                        Debug($"cmd-{export.Name}-{numBits}", "cmds", _cmdReader.ReadBytes(Math.Max((int) Math.Ceiling(_cmdReader.GetBitsLeft() / 8.0), 1)));
 #endif
                         continue;
                     }
@@ -1756,7 +1756,7 @@ namespace Unreal.Core
 #if DEBUG
                         Debug("failed-properties", $"Property {export.Name} (handle: {handle}, path: {group.PathName}) didnt read proper number of bits: {(_cmdReader.LastBit - _cmdReader.GetBitsLeft())} out of {numBits}");
                         _cmdReader.Reset();
-                        Debug($"cmd-{export.Name}-{numBits}", "cmds", _cmdReader.ReadBytes(Math.Max((int)Math.Ceiling(_cmdReader.GetBitsLeft() / 8.0), 1)));
+                        Debug($"cmd-{export.Name}-{numBits}", "cmds", _cmdReader.ReadBytes(Math.Max((int) Math.Ceiling(_cmdReader.GetBitsLeft() / 8.0), 1)));
 #endif
                         continue;
                     }
@@ -1796,7 +1796,7 @@ namespace Unreal.Core
             }
 
             // const int32 NetFieldExportHandle = Bunch.ReadInt(FMath::Max(NetFieldExportGroup->NetFieldExports.Num(), 2));
-            var netFieldExportHandle = archive.ReadSerializedInt(Math.Max((int)group.NetFieldExportsLength, 2));
+            var netFieldExportHandle = archive.ReadSerializedInt(Math.Max((int) group.NetFieldExportsLength, 2));
             if (archive.IsError)
             {
                 payload = null;
@@ -1806,7 +1806,7 @@ namespace Unreal.Core
             }
 
             // const FNetFieldExport& NetFieldExport = NetFieldExportGroup->NetFieldExports[NetFieldExportHandle];
-            outField = group.NetFieldExports[(int)netFieldExportHandle];
+            outField = group.NetFieldExports[(int) netFieldExportHandle];
 
             payload = archive.ReadIntPacked();
             if (archive.IsError)
@@ -1817,7 +1817,7 @@ namespace Unreal.Core
                 return false;
             }
 
-            if (!archive.CanRead((int)payload))
+            if (!archive.CanRead((int) payload))
             {
                 payload = null;
                 return false;
@@ -1871,10 +1871,35 @@ namespace Unreal.Core
                 return netGuid.Value;
             }
 
-            // Serialize the class in case we have to spawn it.
-            var classNetGUID = InternalLoadObject(bunch.Archive, false);
+            var bDeleteSubObject = false;
+            var bSerializeClass = true;
 
-            if (!classNetGUID.IsValid())
+            if (bunch.Archive.EngineNetworkVersion >= EngineNetworkVersionHistory.HISTORY_SUBOBJECT_DESTROY_FLAG)
+            {
+                var bIsDestroyMessage = bunch.Archive.ReadBit();
+                if (bIsDestroyMessage)
+                {
+                    bDeleteSubObject = true;
+                    bSerializeClass = false;
+
+                    var destroyFlags = bunch.Archive.ReadByte();
+                }
+            }
+            //else
+            //{
+            //    bSerializeClass = true;
+            //}
+
+            var classNetGUID = new NetworkGUID();
+            if (bSerializeClass)
+            {
+                // Serialize the class in case we have to spawn it.
+                classNetGUID = InternalLoadObject(bunch.Archive, false);
+
+                bDeleteSubObject = !classNetGUID.IsValid();
+            }
+
+            if (bDeleteSubObject)
             {
                 bObjectDeleted = true;
                 return null;
@@ -1890,7 +1915,7 @@ namespace Unreal.Core
                 }
             }
 
-            return classNetGUID.Value;
+            return classNetGUID?.Value;
         }
 
         /// <summary>
@@ -1967,7 +1992,7 @@ namespace Unreal.Core
                 }
                 else
                 {
-                    bunch.CloseReason = bunch.bClose ? (ChannelCloseReason)bitReader.ReadSerializedInt((int)ChannelCloseReason.MAX) : ChannelCloseReason.Destroyed;
+                    bunch.CloseReason = bunch.bClose ? (ChannelCloseReason) bitReader.ReadSerializedInt((int) ChannelCloseReason.MAX) : ChannelCloseReason.Destroyed;
                     bunch.bDormant = bunch.CloseReason == ChannelCloseReason.Dormancy;
                 }
 
@@ -2010,7 +2035,7 @@ namespace Unreal.Core
 
                 if (bitReader.EngineNetworkVersion < EngineNetworkVersionHistory.HISTORY_CHANNEL_NAMES)
                 {
-                    var type = bitReader.ReadSerializedInt((int)ChannelType.MAX);
+                    var type = bitReader.ReadSerializedInt((int) ChannelType.MAX);
                     //    chType = (bunch.bReliable || bunch.bOpen) ? (ChannelType)type : ChannelType.None;
 
                     //    chName = chType switch
@@ -2045,7 +2070,7 @@ namespace Unreal.Core
                 // If there's an existing channel and the bunch specified it's channel type, make sure they match.
                 // Channel && (Bunch.ChName != NAME_None) && (Bunch.ChName != Channel->ChName)
 
-                var bunchDataBits = (int)bitReader.ReadSerializedInt(MaxPacketSizeInBits);
+                var bunchDataBits = (int) bitReader.ReadSerializedInt(MaxPacketSizeInBits);
 
                 if (bunch.bPartial)
                 {
