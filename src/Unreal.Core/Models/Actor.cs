@@ -18,9 +18,15 @@
 
         public string? GetObject()
         {
-            if (Archetype != null && Archetype.GuidCache!.NetFieldExportGroupMapPathFixed.TryGetValue(Archetype.Value, out var group))
-            {
-                return group.PathName;
+            // if (Archetype != null && Archetype.GuidCache!.NetFieldExportGroupMapPathFixed.TryGetValue(Archetype.Value, out var group))
+            if (Archetype != null && Archetype.GuidCache.ObjectLookup.ContainsKey(Archetype.Value)) {
+                var objectName = Archetype.GuidCache.ObjectLookup[Archetype.Value].PathName;
+                var package = Archetype.GuidCache
+                    .ObjectLookup[Archetype.GuidCache.ObjectLookup[Archetype.Value].OuterGuid.Value].PathName;
+                if (objectName.StartsWith("Default__"))
+                    objectName = objectName.Substring("Default__".Length);
+                return $"{package}.{objectName}";
+                // return group.PathName;
             }
 
             return null;

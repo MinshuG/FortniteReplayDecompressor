@@ -92,6 +92,9 @@ namespace Unreal.Core
         /// Tracks channels that we should ignore when handling special demo data.
         /// </summary>
         private uint?[] IgnoringChannels = new uint?[DefaultMaxChannelSize]; // channel index, actorguid
+        
+        public readonly List<CheckpointInfo> CheckpointInfos = new List<CheckpointInfo>();
+        public readonly List<ReplayDataInfo> ReplayChunks = new List<ReplayDataInfo>();
 
         public ReplayReader(ILogger logger, ParseMode mode)
         {
@@ -175,6 +178,7 @@ namespace Unreal.Core
                 EndTime = archive.ReadUInt32(),
                 SizeInBytes = archive.ReadInt32()
             };
+            CheckpointInfos.Add(info);
 
             using var decrypted = DecryptBuffer(archive, info.SizeInBytes);
             using var binaryArchive = Decompress(decrypted);
@@ -205,9 +209,11 @@ namespace Unreal.Core
                 }
 
                 var deletedNetStartupActors = binaryArchive.ReadArray(binaryArchive.ReadFString);
-                Console.WriteLine();
+                info.DeletedStartupActors = deletedNetStartupActors;
+                // Console.WriteLine();
             }
 
+            var PathNameTable = new List<string>();
             // SerializeGuidCache
             // https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Engine/Private/DemoNetDriver.cpp#L1591
             var count = binaryArchive.ReadInt32();
@@ -235,10 +241,14 @@ namespace Unreal.Core
                     if (isExported)
                     {
                         cacheObject.PathName = binaryArchive.ReadFString();
+                        PathNameTable.Add(cacheObject.PathName);
                     }
                     else
                     {
                         var pathNameIndex = binaryArchive.ReadIntPacked();
+                        // if (PathNameTable.Count > pathNameIndex) {
+                            cacheObject.PathName = PathNameTable[(int)pathNameIndex];
+                        // }
                     }
                 }
 
@@ -249,6 +259,7 @@ namespace Unreal.Core
 
                 cacheObject.Flags = binaryArchive.ReadByte();
 
+                _netGuidCache.ObjectLookup[guid] = cacheObject;
                 // DemoNetDriver 5319
                 // GuidCache->ObjectLookup.Add(Guid, CacheObject);
             }
@@ -285,6 +296,7 @@ namespace Unreal.Core
                 }
 
                 channel.Actor = null;
+                // OnChannelClosed();
             }
 
             // SerializeDemoFrameFromQueuedDemoPackets
@@ -345,7 +357,7 @@ namespace Unreal.Core
 
                     info.DataOffset = archive.Position;
 
-                    //ReplayChunks.Add(info);
+                    // ReplayChunks.Add(info);
                     ReadReplayData(archive, info);
                     // bHasReadReplayData = false;
                 }

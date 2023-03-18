@@ -13,11 +13,13 @@ namespace Unreal.Core.Models
         {
             get
             {
-                if (GuidCache != null && GuidCache.TryGetPathName(Value, out var pathName))
+                // if (GuidCache != null && GuidCache.TryGetPathName(Value, out var pathName)) // v1
+                if (GuidCache != null && GuidCache.ObjectLookup.ContainsKey(Value)) // v2
                 // if (GuidCache.NetFieldExportGroupMapPathFixed.TryGetValue(Value, out var group))
                 {
+                    return GuidCache.ObjectLookup[Value].PathName; // v2
                     // return group.PathName;
-                    return pathName;
+                    // return pathName; // v1
                 }
                 return "None";    
             }

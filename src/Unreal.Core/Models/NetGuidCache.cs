@@ -11,7 +11,7 @@ namespace Unreal.Core.Models
     /// </summary>
     public class NetGuidCache
     {
-        //public Dictionary<uint, NetGuidCacheObject> ObjectLookup { get; private set; } = new Dictionary<uint, NetGuidCacheObject>();
+        public Dictionary<uint, NetGuidCacheObject> ObjectLookup { get; private set; } = new Dictionary<uint, NetGuidCacheObject>();
 
         /// <summary>
         /// Maps net field export group name to the respective NetFieldExportGroup
@@ -256,7 +256,7 @@ namespace Unreal.Core.Models
             NetFieldExportGroupIndexToGroup.Clear();
             NetFieldExportGroupMap.Clear();
             NetGuidToPathName.Clear();
-            //ObjectLookup.Clear();
+            ObjectLookup.Clear();
             NetFieldExportGroupMapPathFixed.Clear();
             ExternalData.Clear();
             _networkGameplayTagNodeIndex = null;
