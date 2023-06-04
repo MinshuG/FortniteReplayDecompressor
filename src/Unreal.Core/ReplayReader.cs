@@ -963,7 +963,8 @@ namespace Unreal.Core
                 if (flags.HasFlag(ExportFlags.bHasPath))
                 {
                     // outerGuid
-                    InternalLoadObject(archive, true, internalLoadObjectRecursionCount + 1);
+                    var outer = InternalLoadObject(archive, true, internalLoadObjectRecursionCount + 1);
+                    netGuid.OuterGuid = outer;
                     var pathName = archive.ReadFString();
                     netGuid.GuidCache = _netGuidCache;
                     if (flags.HasFlag(ExportFlags.bHasNetworkChecksum))
@@ -1319,7 +1320,7 @@ namespace Unreal.Core
 
                     if (!ReceivedReplicatorBunch(bunch, bunch.Archive, repObject, bHasRepLayout))
                     {
-                        _logger?.LogInformation("UActorChannel::ProcessBunch: Replicator.ReceivedBunch returned false");
+                        // _logger?.LogInformation("UActorChannel::ProcessBunch: Replicator.ReceivedBunch returned false");
                         continue;
                     }
                 }

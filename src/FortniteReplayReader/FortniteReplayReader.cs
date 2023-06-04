@@ -94,6 +94,9 @@ namespace FortniteReplayReader
                 case SpawnMachineRepData spawnMachine:
                     Builder.UpdateRebootVan(channelIndex, spawnMachine);
                     break;
+                default:
+                    _logger.LogDebug("Unhandled NetDeltaUpdate: {update}", update.Export);
+                    break;
             }
         }
 
@@ -139,6 +142,9 @@ namespace FortniteReplayReader
                 //    break;
                 case BaseWeapon weapon:
                     Builder.UpdateWeapon(channelIndex, weapon);
+                    break;
+                default:
+                    _logger.LogDebug("Unhandled NetFieldExportGroup: {exportGroup}", exportGroup.GetType().Name);
                     break;
             }
         }
@@ -202,6 +208,22 @@ namespace FortniteReplayReader
             else if (info.Metadata == ReplayEventTypes.ENCRYPTION_KEY)
             {
                 ParseEncryptionKeyEvent(decryptedArchive, info);
+                return;
+            }
+            else if (info.Metadata == ReplayEventTypes.ADDITION_GFP_EVENT) {
+                archive.SkipBytes(info.SizeInBytes);
+                // var gfp_version = archive.ReadInt32();
+                // var gfp_count = archive.ReadUInt32();
+                //
+                // for (int i = 0; i < gfp_count; i++) {
+                //     var gfp_module_id = archive.ReadBytesToString(archive.ReadInt32());
+                //     if (gfp_version < 2) {
+                //         var gfp_moduleVersion = archive.ReadInt32();
+                //     }
+                //     else {
+                //         var gfp_artifactId = archive.ReadFString();
+                //     }
+                // }
                 return;
             }
 

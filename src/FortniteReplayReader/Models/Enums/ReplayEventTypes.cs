@@ -9,5 +9,6 @@ namespace FortniteReplayReader.Models
         public const string CHARACTER_SAMPLE = "CharacterSampleMeta";
         public const string ZONE_UPDATE = "ZoneUpdate";
         public const string BATTLE_BUS = "BattleBusFlight";
+        public const string ADDITION_GFP_EVENT = "AdditionGFPEvent";
     }
 }
