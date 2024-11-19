@@ -9,6 +9,6 @@ namespace Unreal.Core.Contracts
     {
         public uint NetGUID { get; init; }
         public FArchive Archive { get; init; }
-        public int TimeSeconds { get; init; }
+        public float TimeSeconds { get; init; }
     }
 }

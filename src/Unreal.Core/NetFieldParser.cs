@@ -293,12 +293,17 @@ namespace Unreal.Core
 
             if (exportGroup.GroupId == -1)
             {
-                if (!NetFieldGroups.TryGetIndex(exportGroup.PathName, out var groupIndex))
-                {
-                    exportGroup.GroupId = -2;
-                    return false;
+                var groupIndex = -2;
+                if (!NetFieldGroups.TryGetIndex(exportGroup.PathName, out groupIndex)) {
+                    if (exportGroup.PathName.EndsWith("_C") && !NetFieldGroups.TryGetIndex("FallbackObject", out groupIndex)) {
+                        exportGroup.GroupId = -2;
+                        return false;
+                    }
                 }
                 exportGroup.GroupId = groupIndex;
+                if (groupIndex == -2) {
+                    return false;
+                }
             }
 
             var netGroupInfo = NetFieldGroups[exportGroup.GroupId];
@@ -369,6 +374,7 @@ namespace Unreal.Core
                     data = _linqCache.CreatePropertyObject(objectType);
                     (data as IProperty)?.Serialize(netBitReader);
                     (data as IResolvable)?.Resolve(GuidCache);
+                    
                     break;
                 case RepLayoutCmdType.PropertyBool:
                     data = netBitReader.SerializePropertyBool();
@@ -579,6 +585,11 @@ namespace Unreal.Core
         {
             if (!NetFieldGroups.TryGetValue(group, out var exportGroup))
             {
+                if (group.EndsWith("_C")) {
+                    if (NetFieldGroups.TryGetValue("FallbackObject", out exportGroup)) {
+                        return (INetFieldExportGroup)Activator.CreateInstance(exportGroup.Type)!;    
+                    }
+                }
                 return null;
             }
 

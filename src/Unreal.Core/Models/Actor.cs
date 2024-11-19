@@ -15,10 +15,12 @@
         public FRotator? Rotation { get; set; }
         public FVector? Scale { get; set; }
         public FVector? Velocity { get; set; }
-
+        
+        public int LevelIndex { get; set; } // SeenLevelIndex - 1
+        
         public string? GetObject() {
             if (Archetype == null) {
-                return null; //ActorNetGUID.Object;
+                return null; // ActorNetGUID.Object;
             }
             return Archetype.Object;
         }

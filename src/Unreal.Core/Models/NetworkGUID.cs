@@ -5,7 +5,7 @@ namespace Unreal.Core.Models
     /// <summary>
     /// https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Core/Public/Misc/NetworkGuid.h#L14
     /// </summary>
-    public class NetworkGUID : IProperty
+    public class NetworkGUID : IProperty, IResolvable
     {
         public uint Value { get; set; }
         public NetworkGUID? OuterGuid { get; set; }
@@ -62,6 +62,10 @@ namespace Unreal.Core.Models
         public override string ToString()
         {
             return Object;
+        }
+
+        public void Resolve(NetGuidCache cache) {
+            GuidCache = cache;
         }
 
         public void Serialize(NetBitReader reader)

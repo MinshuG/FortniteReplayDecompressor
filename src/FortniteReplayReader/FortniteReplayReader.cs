@@ -66,7 +66,7 @@ namespace FortniteReplayReader
         {
             if (actor != null)
             {
-                Builder.AddActorChannel(channelIndex, actor.Value, actorinfo);
+                Builder.AddActorChannel(channelIndex, actor.Value, actorinfo, ((int)SeenLevelIndex)-1);
             }
         }
 
@@ -95,13 +95,14 @@ namespace FortniteReplayReader
                     Builder.UpdateRebootVan(channelIndex, spawnMachine);
                     break;
                 default:
-                    _logger.LogDebug("Unhandled NetDeltaUpdate: {update}", update.Export);
+                    _logger?.LogDebug("Unhandled NetDeltaUpdate: {update}", update.Export);
                     break;
             }
         }
 
         protected override void OnExportRead(uint channelIndex, INetFieldExportGroup? exportGroup)
         {
+            // return;
             switch (exportGroup)
             {
                 case GameState state:
@@ -143,8 +144,11 @@ namespace FortniteReplayReader
                 case BaseWeapon weapon:
                     Builder.UpdateWeapon(channelIndex, weapon);
                     break;
+                case FallbackExport fallback:
+                    Builder.AddActorInfo(channelIndex, fallback);
+                    break;
                 default:
-                    _logger.LogDebug("Unhandled NetFieldExportGroup: {exportGroup}", exportGroup.GetType().Name);
+                    _logger?.LogDebug("Unhandled NetFieldExportGroup: {exportGroup}", exportGroup.GetType().Name);
                     break;
             }
         }

@@ -4,6 +4,7 @@ using FortniteReplayReader.Models.NetFieldExports.Weapons;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Unreal.Core.Contracts;
 using Unreal.Core.Models;
 
 namespace FortniteReplayReader
@@ -20,6 +21,8 @@ namespace FortniteReplayReader
         private readonly Dictionary<uint, uint> _actorToChannel = new();
         private readonly Dictionary<uint, uint> _channelToActor = new();
         public readonly Dictionary<uint, Actor> _actor_actors = new();
+        public readonly Dictionary<uint, List<INetFieldExportGroup>> _actorToActorExport = new();
+        public readonly Dictionary<uint, List<uint>> _levelToActor = new();
 
         private readonly Dictionary<uint, uint> _pawnChannelToStateChannel = new();
 
@@ -46,11 +49,31 @@ namespace FortniteReplayReader
             _actorToChannel[guid] = channelIndex;
             _channelToActor[channelIndex] = guid;
         }
-        
-        public void AddActorChannel(uint channelIndex, uint guid, Actor actorinfo)
+
+        public void AddActorInfo(uint channelIndex, FallbackExport? exportGroup) {
+            if (exportGroup == null) {
+                return;
+            }
+            if (!_actorToActorExport.ContainsKey(_channelToActor[channelIndex])) _actorToActorExport[_channelToActor[channelIndex]] = new List<INetFieldExportGroup>();
+            
+            _actorToActorExport[_channelToActor[channelIndex]].Add(exportGroup);
+            var actor = _actor_actors[_channelToActor[channelIndex]];
+            if (actor.Location == null && exportGroup.LocationOffset != null) {
+                actor.Location = exportGroup.LocationOffset;
+                actor.Rotation = exportGroup.RotationOffset;
+                actor.Scale = exportGroup.RelativeScale3D;
+            }
+        }
+
+        public void AddActorChannel(uint channelIndex, uint guid, Actor actorInfo, int seenLevel)
         {
             AddActorChannel(channelIndex, guid);
-            _actor_actors[guid] = actorinfo;
+            _actor_actors[guid] = actorInfo;
+            actorInfo.LevelIndex = seenLevel;
+
+            // if (!_levelToActor.ContainsKey(seenLevel)) _levelToActor[seenLevel] = new List<uint>();
+            //
+            // _levelToActor[seenLevel].Add(guid);
         }
 
         public void RemoveChannel(uint channelIndex)
