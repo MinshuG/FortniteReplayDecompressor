@@ -1,13 +1,12 @@
-﻿namespace Unreal.Core.Models
+﻿namespace Unreal.Core.Models;
+
+/// <summary>
+/// see 
+/// </summary>
+public class ReplayDataInfo
 {
-    /// <summary>
-    /// see 
-    /// </summary>
-    public class ReplayDataInfo
-    {
-        public uint Start { get; set; }
-        public uint End { get; set; }
-        public int Length { get; set; }
-        public int DataOffset { get; set; }
-    }
+    public uint Start { get; set; }
+    public uint End { get; set; }
+    public int Length { get; set; }
+    public int DataOffset { get; set; }
 }

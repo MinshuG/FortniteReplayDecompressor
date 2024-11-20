@@ -5,10 +5,61 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- .net 6 and C# 10
 - More changes and improvements by [SL-x-TnT](https://github.com/SL-x-TnT)
 - Interfaces to support proper DI
 - Register types to be parsed with DI
+
+## [2.4.0] - 2024-11-13
+### Changed
+- support .net9
+- fix parsing of `FRepMovement` with `RepMoveOptionalAcceleration` (thanks @Zaid)
+
+### Removed 
+- support .net6
+
+## [2.3.1] - 2024-11-08
+### Changed
+- fix parsing of `FGameplayTag` with new `bUseDynamicReplication`
+
+## [2.3.0] - 2024-11-05
+### Changed
+- add support for Fortnite v32 (see [issue 58](https://github.com/Shiqan/FortniteReplayDecompressor/issues/58)) (by [SL-x-TnT](https://github.com/SL-x-TnT))
+
+## [2.2.2] - 2024-03-31
+### Changed
+- fix `ParseElimination` (see [issue 55](https://github.com/Shiqan/FortniteReplayDecompressor/issues/55))
+
+## [2.2.1] - 2024-03-09
+### Changed
+- fix possible infinite loop while parsing broken replays (by [diopolgg](https://github.com/diopolgg))
+
+## [2.2.0] - 2023-11-18
+### Changed
+- support .net8
+
+## [2.1.0] - 2023-09-10
+### Changed
+- support .net6
+
+## [2.0.8] - 2023-09-10
+### Changed
+- add support for Fortnite v26
+
+## [2.0.7] - 2023-09-10
+### Changed
+- add HISTORY_GAMESTATE_REPLCIATED_TIME_AS_DOUBLE (by [chrisai-dev](https://github.com/chrisai-dev))
+
+## [2.0.6] - 2023-06-10
+### Changed
+- adding support for Fortnite v25
+
+## [2.0.5] - 2022-12-04
+### Changed
+- support new network version
+
+## [2.0.4] - 2022-10-04
+### Changed
+- fix issue in Oodle decompress (by [SL-x-TnT](https://github.com/SL-x-TnT))
 
 ## [2.0.3] - 2022-09-19
 ### Changed
@@ -84,3 +135,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.1.1]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/1.1.1
 [1.1.2]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/1.1.2
 [2.0.0]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.0
+[2.0.1]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.1
+[2.0.2]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.2
+[2.0.3]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.3
+[2.0.4]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.4
+[2.0.5]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.5
+[2.0.6]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.6
+[2.0.7]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.7
+[2.0.8]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.0.8
+[2.1.0]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.1.0
+[2.2.0]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.2.0
+[2.2.1]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.2.1
+[2.2.2]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.2.2
+[2.3.1]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.3.0
+[2.3.1]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.3.1
+[2.4.0]: https://github.com/Shiqan/FortniteReplayDecompressor/releases/tag/2.4.0
